@@ -1,0 +1,68 @@
+PRAGMA foreign_keys = ON;
+
+DROP VIEW IF EXISTS DailyIncrease;
+DROP VIEW IF EXISTS LatestCountryStats;
+DROP VIEW IF EXISTS CountrySummary;
+DROP TABLE IF EXISTS CovidStats;
+
+CREATE TABLE CovidStats (
+    ReportID INTEGER PRIMARY KEY AUTOINCREMENT,
+    Country TEXT NOT NULL,
+    ReportDate TEXT NOT NULL,
+    ConfirmedCases INTEGER,
+    Deaths INTEGER,
+    Recoveries INTEGER
+);
+
+INSERT INTO CovidStats (Country, ReportDate, ConfirmedCases, Deaths, Recoveries) VALUES
+('India', '2020-03-01', 3, 0, 3),
+('India', '2020-03-15', 100, 2, 5),
+('India', '2020-04-01', 2000, 50, 100),
+('India', '2020-05-01', 35000, 1000, 8000),
+('India', '2020-06-01', 120000, 4000, 60000),
+
+('USA', '2020-03-01', 10, 1, 0),
+('USA', '2020-03-15', 500, 10, 5),
+('USA', '2020-04-01', 20000, 500, 2000),
+('USA', '2020-05-01', 80000, 4000, 10000),
+('USA', '2020-06-01', 150000, 10000, 50000),
+
+('Italy', '2020-03-01', 100, 5, 2),
+('Italy', '2020-03-15', 15000, 1000, 200),
+('Italy', '2020-04-01', 80000, 10000, 15000),
+('Italy', '2020-05-01', 90000, 12000, 40000),
+('Italy', '2020-06-01', 100000, 13000, 60000);
+
+CREATE VIEW DailyIncrease AS
+SELECT
+    Country,
+    ReportDate,
+    ConfirmedCases,
+    LAG(ConfirmedCases) OVER (PARTITION BY Country ORDER BY ReportDate) AS PreviousDayCases,
+    ConfirmedCases - LAG(ConfirmedCases) OVER (PARTITION BY Country ORDER BY ReportDate) AS DailyNewCases
+FROM CovidStats;
+
+CREATE VIEW LatestCountryStats AS
+SELECT c.*
+FROM CovidStats c
+JOIN (
+    SELECT Country, MAX(ReportDate) AS MaxDate
+    FROM CovidStats
+    GROUP BY Country
+) latest
+ON c.Country = latest.Country AND c.ReportDate = latest.MaxDate;
+
+CREATE VIEW CountrySummary AS
+SELECT 
+    Country,
+    SUM(ConfirmedCases) AS TotalCases,
+    SUM(Deaths) AS TotalDeaths,
+    SUM(Recoveries) AS TotalRecoveries,
+    ROUND(100.0 * SUM(Recoveries) / SUM(ConfirmedCases), 2) AS RecoveryRate
+FROM CovidStats
+GROUP BY Country;
+
+SELECT * FROM CovidStats;
+SELECT * FROM DailyIncrease;
+SELECT * FROM LatestCountryStats;
+SELECT * FROM CountrySummary;

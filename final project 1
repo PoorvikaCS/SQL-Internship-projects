@@ -1,0 +1,132 @@
+PRAGMA foreign_keys = ON;
+
+DROP TABLE IF EXISTS Evidence;
+DROP TABLE IF EXISTS SuspectCaseLink;
+DROP TABLE IF EXISTS CaseAssignments;
+DROP TABLE IF EXISTS Suspects;
+DROP TABLE IF EXISTS Officers;
+DROP TABLE IF EXISTS Cases;
+
+
+CREATE TABLE IF NOT EXISTS Cases (
+    CaseID INTEGER PRIMARY KEY AUTOINCREMENT,
+    CaseName TEXT NOT NULL,
+    DateFiled TEXT NOT NULL,
+    Status TEXT CHECK(Status IN ('Solved', 'Unsolved')) NOT NULL,
+    CrimeType TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS Officers (
+    OfficerID INTEGER PRIMARY KEY AUTOINCREMENT,
+    Name TEXT NOT NULL,
+    Rank TEXT NOT NULL,
+    Department TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS Suspects (
+    SuspectID INTEGER PRIMARY KEY AUTOINCREMENT,
+    Name TEXT NOT NULL,
+    Age INTEGER CHECK(Age > 0),
+    Gender TEXT CHECK(Gender IN ('Male', 'Female', 'Other')),
+    Address TEXT
+);
+
+CREATE TABLE IF NOT EXISTS CaseAssignments (
+    OfficerID INTEGER,
+    CaseID INTEGER,
+    PRIMARY KEY (OfficerID, CaseID),
+    FOREIGN KEY (OfficerID) REFERENCES Officers(OfficerID) ON DELETE CASCADE,
+    FOREIGN KEY (CaseID) REFERENCES Cases(CaseID) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS SuspectCaseLink (
+    CaseID INTEGER,
+    SuspectID INTEGER,
+    PRIMARY KEY (CaseID, SuspectID),
+    FOREIGN KEY (CaseID) REFERENCES Cases(CaseID) ON DELETE CASCADE,
+    FOREIGN KEY (SuspectID) REFERENCES Suspects(SuspectID) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS Evidence (
+    EvidenceID INTEGER PRIMARY KEY AUTOINCREMENT,
+    CaseID INTEGER,
+    Description TEXT NOT NULL,
+    CollectedBy INTEGER,
+    ChainOfCustody TEXT,
+    Timestamp TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (CaseID) REFERENCES Cases(CaseID) ON DELETE CASCADE,
+    FOREIGN KEY (CollectedBy) REFERENCES Officers(OfficerID) ON DELETE CASCADE
+);
+
+
+INSERT INTO Officers (Name, Rank, Department) VALUES
+('John Carter', 'Inspector', 'Homicide'),
+('Riya Sharma', 'Sergeant', 'Cyber Crime'),
+('Karan Das', 'Constable', 'Narcotics'),
+('Maya Pillai', 'Detective', 'Fraud Unit'),
+('Arjun Roy', 'Sub-Inspector', 'Theft');
+
+INSERT INTO Cases (CaseName, DateFiled, Status, CrimeType) VALUES
+('ATM Robbery', '2023-05-01', 'Solved', 'Robbery'),
+('Online Scam', '2023-06-15', 'Unsolved', 'Fraud'),
+('Drug Bust', '2023-04-20', 'Solved', 'Narcotics'),
+('Homicide in Park', '2023-03-12', 'Unsolved', 'Murder');
+
+INSERT INTO Suspects (Name, Age, Gender, Address) VALUES
+('Rahul Singh', 35, 'Male', 'Mumbai'),
+('Anita Verma', 28, 'Female', 'Delhi'),
+('Sameer Khan', 40, 'Male', 'Hyderabad'),
+('Preeti Rao', 30, 'Female', 'Chennai'),
+('Vikram Sethi', 45, 'Male', 'Kolkata');
+
+
+INSERT INTO SuspectCaseLink (CaseID, SuspectID) VALUES
+(1, 1),
+(2, 2),
+(3, 3),
+(4, 4);
+
+INSERT INTO CaseAssignments (OfficerID, CaseID) VALUES
+(1, 1),
+(2, 2),
+(3, 3),
+(4, 2),
+(5, 1),
+(1, 4);
+
+
+INSERT INTO Evidence (CaseID, Description, CollectedBy, ChainOfCustody) VALUES
+(1, 'CCTV footage from ATM', 1, 'Collected by OfficerID 1'),
+(1, 'Gloves left behind', 5, 'Collected by OfficerID 5'),
+(2, 'Email trace logs', 2, 'Collected by OfficerID 2'),
+(3, 'Drug samples', 3, 'Collected by OfficerID 3'),
+(4, 'Knife found in bushes', 1, 'Collected by OfficerID 1');
+
+
+CREATE VIEW IF NOT EXISTS OfficerWorkload AS
+SELECT o.Name AS OfficerName, COUNT(ca.CaseID) AS TotalCases
+FROM Officers o
+JOIN CaseAssignments ca ON o.OfficerID = ca.OfficerID
+GROUP BY o.OfficerID;
+
+CREATE VIEW IF NOT EXISTS CaseStatusByType AS
+SELECT CrimeType, Status, COUNT(*) AS Total
+FROM Cases
+GROUP BY CrimeType, Status;
+
+CREATE VIEW IF NOT EXISTS EvidenceSummary AS
+SELECT c.CaseName, COUNT(e.EvidenceID) AS TotalEvidence
+FROM Cases c
+LEFT JOIN Evidence e ON c.CaseID = e.CaseID
+GROUP BY c.CaseID;
+
+SELECT * FROM OfficerWorkload;
+ SELECT * FROM OfficerWorkload;
+SELECT * FROM CaseStatusByType;
+SELECT * FROM EvidenceSummary;
+SELECT * FROM Evidence;
+SELECT * FROM CaseAssignments;
+SELECT * FROM SuspectCaseLink;
+SELECT * FROM Officers;
+SELECT * FROM Cases;
+SELECT * FROM Suspects;
